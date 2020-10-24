@@ -40,7 +40,11 @@ execute(['scrapy', 'crawl', 'cnblogs'])
 + 5. 后代节点
 
 ### 2.3 xpath语法
-
+```
+# url = response.xpath('//*[@id="entry_675694"]/div[2]/h2/a/@href').extract_first("")
+# url = response.xpath('//div[@id="news_list"]/div[1]/div[2]/h2/a/@href').extract_first("")
+url = response.xpath('//div[@id="news_list"]//h2[@class="news_entry"]/a/@href').extract_first("")
+```
 #### 2.3.1 语法1
 
 | **表达式**   | **说明**                                                     |
@@ -74,6 +78,7 @@ execute(['scrapy', 'crawl', 'cnblogs'])
 | article/div/p\| //span | 选取所有属于article元素的div元素的p元素 以及文档中所有的span元素 |
 
 ## 3. css
+`url = response.css('div#news_list h2.news_entry a::attr(href)').extract()`
 ### 3.1 css选择器1
 
 | **表达式**          | **说明**                               |
@@ -104,6 +109,21 @@ execute(['scrapy', 'crawl', 'cnblogs'])
 | div:not(#container) | 选取所有id非container的div属性 |
 | li:nth-child(3)     | 选取第三个li元素               |
 | tr:nth-child(2n)    | 第偶数个tr                     |
+
+### 3.4 总结
+```
+# 1.xpath
+# url = response.xpath('//*[@id="entry_675694"]/div[2]/h2/a/@href').extract_first("")
+# url = response.xpath('//div[@id="news_list"]/div[1]/div[2]/h2/a/@href').extract_first("")
+# url = response.xpath('//div[@id="news_list"]//h2[@class="news_entry"]/a/@href').extract_first("")
+
+# 2. css selector
+# url = response.css('div#news_list h2.news_entry a::attr(href)').extract()
+
+# 3.通过Selector来实现，需要导入from scrapy import Selector,主要是为了自己使用方便，建议还是使用1,2
+sel = Selector(text=response.text)
+url = response.css('div#news_list h2.news_entry a::attr(href)').extract()
+```
 
 ## 4. http code
 
