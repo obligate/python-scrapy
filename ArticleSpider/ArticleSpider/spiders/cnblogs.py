@@ -1,12 +1,14 @@
 # _*_ coding: utf-8 _*_
 # @Time     : 2020/10/24 2:30
 # @Author   : Peter
-
+import re
+import json
 from urllib import parse
 
 import scrapy
 from scrapy import Selector
 from scrapy import Request
+import requests
 
 
 class CnblogsSpider(scrapy.Spider):
@@ -36,6 +38,7 @@ class CnblogsSpider(scrapy.Spider):
         # urls = response.css('div#news_list h2.news_entry a::attr(href)').extract()
         # post_nodes = response.css('#news_list .news_block')  # div#news_list div.news_block
         post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')
+        # post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[:1]   # debug时候用
 
         for post_node in post_nodes:
             # image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
@@ -43,7 +46,8 @@ class CnblogsSpider(scrapy.Spider):
             image_url = post_node.xpath('.//div[@class="entry_summary"]/a/img/@src').extract_first("")
             post_url = post_node.xpath('.//h2[@class="news_entry"]/a/@href').extract_first("")
             # 获取文章列表页中的文章url并交给scrapy下载后并进行解析,此时会生成一个request，交给scrapy进行处理, 爬取帖子详情页
-            yield Request(url=parse.urljoin(response.url, post_url), meta={'front_image_url': image_url}, callback=self.parse_detail)
+            yield Request(url=parse.urljoin(response.url, post_url), meta={'front_image_url': image_url},
+                          callback=self.parse_detail)
 
         # 提取下一页并交给scrapy进行下载
         # 获取分页中的最后一个a标签，判断它的值是否为Next
@@ -55,7 +59,9 @@ class CnblogsSpider(scrapy.Spider):
         #     yield Request(url=parse.urljoin(response.url, post_url), callback=self.parse)
         # xpath方式
         # next_url = response.xpath('//div[@class=pager]//a[contains(text(),"Next >"]').extract_first("")
-        next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")    # 获取a标签中的值包含Next >的并获取href
+
+        # debug的时候可以注释掉
+        next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
         if next_url:
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
         pass
@@ -85,7 +91,8 @@ class CnblogsSpider(scrapy.Spider):
             image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
             post_url = post_node.css('h2.news_entry  a::attr(href)').extract_first("")
             # 获取文章列表页中的文章url并交给scrapy下载后并进行解析,此时会生成一个request，交给scrapy进行处理, 爬取帖子详情页
-            yield Request(url=parse.urljoin(response.url, post_url), meta={'front_image_url': image_url}, callback=self.parse_detail)
+            yield Request(url=parse.urljoin(response.url, post_url), meta={'front_image_url': image_url},
+                          callback=self.parse_detail)
 
         # 提取下一页并交给scrapy进行下载
         # 获取分页中的最后一个a标签，判断它的值是否为Next
@@ -95,4 +102,31 @@ class CnblogsSpider(scrapy.Spider):
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_detail(self, response):
+        match_re = re.match('.*?(\d+)', response.url)
+        if match_re:
+            title = response.css('#news_title a::text').extract_first("")
+            create_date = response.css('#news_info .time::text').extract_first("")
+            content = response.css('#news_content').extract()[0]  # 内容一般保存html
+            tag_list = response.css(".news_tags a::text").extract()
+            tags = ",".join(tag_list)  # mysql存储的时候，用逗号隔开
+
+            post_id = match_re.group(1)
+            # 同步请求代码，在并发要求不是很高时可以采用,建议采用异步，yield方式
+            # html = requests.get(parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)))
+            # j_data = json.loads(html.text)
+            # praise_nums = j_data["DiggCount"]
+            # fav_nums = j_data["TotalView"]
+            # comment_nums = j_data["CommentCount"]
+            yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)), callback=self.parse_nums)
+
+        pass
+
+    def parse_detail_by_css(self, response):
+        pass
+
+    def parse_nums(self, response):
+        j_data = json.loads(response.text)
+        praise_nums = j_data["DiggCount"]
+        fav_nums = j_data["TotalView"]
+        comment_nums = j_data["CommentCount"]
         pass

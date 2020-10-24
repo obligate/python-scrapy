@@ -16,7 +16,7 @@ cd ArticleSpider
 scrapy genspider cnblogs news.cnblogs.com
 scrapy crawl cnblogs                   #  启动爬虫
 ```
-### 1.4如何debug scrapy
+### 1.4如何在pycharm中debug scrapy
 ```
 例如： cd ArticleSpider，在ArticleSpider目录创建一个main.py
 # 1. 需要把当前文件所在的根目录添加到环境变量才可以进行debug
@@ -25,7 +25,29 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 execute(['scrapy', 'crawl', 'cnblogs'])
 # 3. 就可以在spider中，添加断点，进行debug
 ```
+### 1.5 scrapy shell 调试
+```
+进入cmd命令，进入虚拟环境所在文件夹
+执行命令 activate
+(venv-scrapy) E:\venv-scrapy\Scripts> scrapy shell https://news.cnblogs.com/n/675731/
+>>> response.css('#news_title a::text').extract_first("")
+'McAfee 30年沉浮录：行业黄金时代一去不复返？'
+```
+![demo3](imgs/31.png)
+![demo3](imgs/32.png)
+### 1.6 chrome xpath 
+- 打开`开发者工具`
+- 选择`Console`选项卡
+- 使用`$x()`测试`xpath`脚本
+```
+# 获取节点的文本我们用text()或者.innerText
+$x('//div[@id="news_title"]/a/text()')[0]
+$x('//div[@id="news_title"]/a')[0].innerText
+```
+![demo2](imgs/2.png)
 
+或者再控制ctrl + F 输入 //div[@id="news_title"]/a  看是否支持xpath匹配
+![demo1](imgs/1.png)
 ## 2. xpath
 ### 2.1 xpath简介
 + 1. xpath使用路径表达式在xml和html中进行导航
@@ -137,6 +159,18 @@ url = response.css('div#news_list h2.news_entry a::attr(href)').extract()
 | 503      | 服务器停机或正在维护      |
 
 ## yield
+
+## 获取ajax请求的数据
+```
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com requests
+# 获取数据
+import requests
+import json
+response = requests.get('https://news.cnblogs.com/NewsAjax/GetAjaxNewsInfo?contentId=675731')
+print(response.text)
+j_data = json.loads(response.text)
+print(j_data['TotalView'])
+```
 
 ## refer
 
