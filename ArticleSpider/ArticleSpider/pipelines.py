@@ -5,6 +5,10 @@
 
 
 # useful for handling different item types with a single interface
+import codecs
+import json
+
+
 from itemadapter import ItemAdapter
 from scrapy.pipelines.images import ImagesPipeline
 
@@ -24,3 +28,15 @@ class ArticleImagePipeline(ImagesPipeline):
             item["front_image_path"] = image_file_path
 
         return item
+
+
+class JsonWithEncodingPipeline(object):
+    #自定义json文件的导出
+    def __init__(self):
+        self.file = codecs.open('article.json', 'w', encoding="utf-8")
+    def process_item(self, item, spider):
+        lines = json.dumps(dict(item), ensure_ascii=False) + "\n"
+        self.file.write(lines)
+        return item
+    def spider_closed(self, spider):
+        self.file.close()
