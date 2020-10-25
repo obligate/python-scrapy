@@ -33,8 +33,8 @@ execute(['scrapy', 'crawl', 'cnblogs'])
 >>> response.css('#news_title a::text').extract_first("")
 'McAfee 30年沉浮录：行业黄金时代一去不复返？'
 ```
-![demo3](imgs/31.png)
-![demo3](imgs/32.png)
+![demo3](doc-imgs/31.png)
+![demo3](doc-imgs/32.png)
 ### 1.6 chrome xpath 
 - 打开`开发者工具`
 - 选择`Console`选项卡
@@ -44,10 +44,10 @@ execute(['scrapy', 'crawl', 'cnblogs'])
 $x('//div[@id="news_title"]/a/text()')[0]
 $x('//div[@id="news_title"]/a')[0].innerText
 ```
-![demo2](imgs/2.png)
+![demo2](doc-imgs/2.png)
 
 或者再控制ctrl + F 输入 //div[@id="news_title"]/a  看是否支持xpath匹配
-![demo1](imgs/1.png)
+![demo1](doc-imgs/1.png)
 ## 2. xpath
 ### 2.1 xpath简介
 + 1. xpath使用路径表达式在xml和html中进行导航
@@ -170,6 +170,32 @@ response = requests.get('https://news.cnblogs.com/NewsAjax/GetAjaxNewsInfo?conte
 print(response.text)
 j_data = json.loads(response.text)
 print(j_data['TotalView'])
+```
+
+## 图片的下载配置
+- [media-pipeline](https://docs.scrapy.org/en/latest/topics/media-pipeline.html)
+```
+1.需要在settings.py中设置image pipeline，默认的
+ITEM_PIPELINES = {
+   'scrapy.pipelines.images.ImagesPipeline': 1,
+}
+2. 需要配置image的store和字段IMAGES_URLS_FIELD
+IMAGES_URLS_FIELD = "front_image_url"
+project_dir = os.path.abspath(os.path.dirname(__file__))
+IMAGES_STORE = os.path.join(project_dir, 'images')
+3. 需要安装pillow模块
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com pillow
+4. 如果需要获取真实的存储路径，需要重新pipeline的item_completed方法
+class ArticleImagePipeline(ImagesPipeline):
+    def item_completed(self, results, item, info):
+        if "front_image_url" in item:
+            for ok, value in results:
+                image_file_path = value["path"]
+            item["front_image_path"] = image_file_path
+
+        return item
+需要在setting.py中设置
+'ArticleSpider.pipelines.ArticleImagePipeline': 1,
 ```
 
 ## refer

@@ -18,7 +18,7 @@ from ArticleSpider.utils import common
 class CnblogsSpider(scrapy.Spider):
     name = 'cnblogs'
     allowed_domains = ['news.cnblogs.com']
-    start_urls = ['http://news.cnblogs.com/']
+    start_urls = ['https://news.cnblogs.com/']
 
     def parse(self, response):
         # 1.xpath
@@ -42,7 +42,7 @@ class CnblogsSpider(scrapy.Spider):
         # urls = response.css('div#news_list h2.news_entry a::attr(href)').extract()
         # post_nodes = response.css('#news_list .news_block')  # div#news_list div.news_block
         # post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')
-        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[:1]   # debug时候用
+        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[1:2]   # debug时候用
 
         for post_node in post_nodes:
             # image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
@@ -65,9 +65,9 @@ class CnblogsSpider(scrapy.Spider):
         # next_url = response.xpath('//div[@class=pager]//a[contains(text(),"Next >"]').extract_first("")
 
         # debug的时候可以注释掉
-        next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
-        if next_url:
-            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
+        # next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
+        # if next_url:
+        #     yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_by_css(self, response):
         # 1.xpath
@@ -133,7 +133,12 @@ class CnblogsSpider(scrapy.Spider):
             article_item['create_date'] = create_date
             article_item['content'] = content
             article_item['tags'] = tags
-            article_item['front_image_url'] = response.meta.get('front_image_url', '')
+            # 报错：ValueError:Missing scheme in request url:h
+            # 上述报错原因：对于图片下载的字段一定要使用list类型，故[response.meta.get("front_image_url", "")]
+            if response.meta.get("front_image_url", ""):
+                article_item["front_image_url"] = [response.meta.get("front_image_url", "")]
+            else:
+                article_item["front_image_url"] = []
 
             yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
                           meta={'article_item': article_item},
