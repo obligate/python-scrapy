@@ -197,7 +197,27 @@ class ArticleImagePipeline(ImagesPipeline):
 需要在setting.py中设置
 'ArticleSpider.pipelines.ArticleImagePipeline': 1,
 ```
+## mysql 保存
+```
+1. 安装mysql驱动
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com mysqlclient
+2. 需要提供一个pipeline
+class MysqlPipeline(object):
+    def __init__(self):
+        self.conn = MySQLdb.connect('127.0.0.1', 'root', 'root', 'article_spider', charset="utf8", use_unicode=True)
+        self.cursor = self.conn.cursor()
 
+    def process_item(self, item, spider):
+        insert_sql = """
+            insert into cnblogs_article(title, url, create_date, fav_nums)
+            VALUES (%s, %s, %s, %s)
+        """
+        self.cursor.execute(insert_sql, (item["title"], item["url"], item["create_date"], item["fav_nums"]))
+        self.cursor.execute(insert_sql, (item.get("title", ""), item["url"], item["create_date"], item["fav_nums"]))
+        self.conn.commit()
+3.需要在setting.py中设置
+'ArticleSpider.pipelines.MysqlPipeline': 4,
+```
 ## refer
 
 - [python extension packages for window](https://www.lfd.uci.edu/~gohlke/pythonlibs/)

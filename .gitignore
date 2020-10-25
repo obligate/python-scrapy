@@ -1,3 +1,5 @@
 *.pyc
 .idea
 /ArticleSpider/ArticleSpider/images/
+/ArticleSpider/ArticleSpider/images
+/ArticleSpider/article.json

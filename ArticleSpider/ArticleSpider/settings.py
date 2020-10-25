@@ -71,6 +71,9 @@ ITEM_PIPELINES = {
     # 'scrapy.pipelines.images.ImagesPipeline': 1,
     'ArticleSpider.pipelines.ArticleImagePipeline': 1,
     'ArticleSpider.pipelines.JsonWithEncodingPipeline': 2,
+    'ArticleSpider.pipelines.JsonExporterPipleline': 3,
+    # 'ArticleSpider.pipelines.MysqlPipeline': 4,
+    'ArticleSpider.pipelines.MysqlTwistedPipline': 4,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -98,4 +101,13 @@ ITEM_PIPELINES = {
 IMAGES_URLS_FIELD = "front_image_url"
 project_dir = os.path.abspath(os.path.dirname(__file__))
 IMAGES_STORE = os.path.join(project_dir, 'images')
-print(IMAGES_STORE)
+# print(IMAGES_STORE)
+
+# mysql配置
+MYSQL_HOST = "127.0.0.1"
+MYSQL_DBNAME = "article_spider"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = "root"
+
+SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+SQL_DATE_FORMAT = "%Y-%m-%d"

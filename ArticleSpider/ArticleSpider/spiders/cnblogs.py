@@ -42,7 +42,7 @@ class CnblogsSpider(scrapy.Spider):
         # urls = response.css('div#news_list h2.news_entry a::attr(href)').extract()
         # post_nodes = response.css('#news_list .news_block')  # div#news_list div.news_block
         # post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')
-        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[1:2]   # debug时候用
+        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[:1]   # debug时候用
 
         for post_node in post_nodes:
             # image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
@@ -65,9 +65,9 @@ class CnblogsSpider(scrapy.Spider):
         # next_url = response.xpath('//div[@class=pager]//a[contains(text(),"Next >"]').extract_first("")
 
         # debug的时候可以注释掉
-        next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
-        if next_url:
-            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
+        # next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
+        # if next_url:
+        #     yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_by_css(self, response):
         # 1.xpath
