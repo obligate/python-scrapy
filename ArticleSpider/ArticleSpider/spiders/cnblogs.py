@@ -43,13 +43,15 @@ class CnblogsSpider(scrapy.Spider):
         """
         # urls = response.css('div#news_list h2.news_entry a::attr(href)').extract()
         # post_nodes = response.css('#news_list .news_block')  # div#news_list div.news_block
-        # post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')
-        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[:1]   # debug时候用
+        post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')
+        # post_nodes = response.xpath('//div[@id="news_list"]/div[@class="news_block"]')[:1]   # debug时候用
 
         for post_node in post_nodes:
             # image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
             # post_url = post_node.css('h2.news_entry  a::attr(href)').extract_first("")
             image_url = post_node.xpath('.//div[@class="entry_summary"]/a/img/@src').extract_first("")
+            if image_url.startswith("//"):
+                image_url = "https:" + image_url
             post_url = post_node.xpath('.//h2[@class="news_entry"]/a/@href').extract_first("")
             # 获取文章列表页中的文章url并交给scrapy下载后并进行解析,此时会生成一个request，交给scrapy进行处理, 爬取帖子详情页
             yield Request(url=parse.urljoin(response.url, post_url), meta={'front_image_url': image_url},
@@ -67,9 +69,9 @@ class CnblogsSpider(scrapy.Spider):
         # next_url = response.xpath('//div[@class=pager]//a[contains(text(),"Next >"]').extract_first("")
 
         # debug的时候可以注释掉
-        # next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
-        # if next_url:
-        #     yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
+        next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
+        if next_url:
+            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_by_css(self, response):
         # 1.xpath
@@ -151,7 +153,8 @@ class CnblogsSpider(scrapy.Spider):
             item_loader.add_css('tags', '.news_tags a::text')
             item_loader.add_css('create_date', '#news_info .time::text')
             item_loader.add_value('url', response.url)
-            item_loader.add_value('front_image_url', response.meta.get("front_image_url", ""))
+            if response.meta.get("front_image_url", []):
+                item_loader.add_value('front_image_url', response.meta.get("front_image_url", []))
             # article_item = item_loader.load_item()
             #
             # yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
