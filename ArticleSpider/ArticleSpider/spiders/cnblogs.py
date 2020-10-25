@@ -8,10 +8,12 @@ from urllib import parse
 import scrapy
 from scrapy import Selector
 from scrapy import Request
+# from scrapy.loader import ItemLoader   替换成自定义的 CnBlogsArticleItemLoader
 import requests
 
 from ArticleSpider.items import CnBlogsArticleItem
 from ArticleSpider.utils import common
+from ArticleSpider.items import CnBlogsArticleItemLoader
 
 
 
@@ -108,6 +110,62 @@ class CnblogsSpider(scrapy.Spider):
         match_re = re.match(".*?(\d+)", response.url)
 
         if match_re:
+            post_id = match_re.group(1)
+
+            # article_item = CnBlogsArticleItem()
+            # title = response.xpath('//*[@id="news_title"]//a/text()').extract_first("")
+            # create_date = response.xpath('//*[@id="news_info"]//*[@class="time"]/text()').extract_first("")
+            # # 提取时间
+            # match_re = re.match(".*?(\d+.*)", create_date)
+            # if match_re:
+            #     create_date = match_re.group(1)
+            #
+            # content = response.xpath('//*[@id="news_content"]').extract()[0]  # 内容一般保存html
+            # tag_list = response.xpath('//*[@class="news_tags"]//a/text()').extract()
+            # tags = ",".join(tag_list)  # mysql存储的时候，用逗号隔开
+            #
+            # # 同步请求代码，在并发要求不是很高时可以采用,建议采用异步，yield方式
+            # # html = requests.get(parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)))
+            # # j_data = json.loads(html.text)
+            # # praise_nums = j_data["DiggCount"]
+            # # fav_nums = j_data["TotalView"]
+            # # comment_nums = j_data["CommentCount"]
+            #
+            # article_item['url'] = response.url
+            # article_item['title'] = title
+            # article_item['create_date'] = create_date
+            # article_item['content'] = content
+            # article_item['tags'] = tags
+            # # 报错：ValueError:Missing scheme in request url:h
+            # # 上述报错原因：对于图片下载的字段一定要使用list类型，故[response.meta.get("front_image_url", "")]
+            # if response.meta.get("front_image_url", ""):
+            #     article_item["front_image_url"] = [response.meta.get("front_image_url", "")]
+            # else:
+            #     article_item["front_image_url"] = []
+
+            # 使用itemloader进行改造
+            # item_loader = ItemLoader(item=CnBlogsArticleItem(), response=response)
+            item_loader = CnBlogsArticleItemLoader(item=CnBlogsArticleItem(), response=response)
+            item_loader.add_css('title', '#news_title a::text')
+            item_loader.add_css('content', '#news_content')
+            item_loader.add_css('tags', '.news_tags a::text')
+            item_loader.add_css('create_date', '#news_info .time::text')
+            item_loader.add_value('url', response.url)
+            item_loader.add_value('front_image_url', response.meta.get("front_image_url", ""))
+            # article_item = item_loader.load_item()
+            #
+            # yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
+            #               meta={'article_item': article_item},
+            #               callback=self.parse_nums)
+            # 传递itemloader方式
+            yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
+                          meta={'article_item': item_loader, 'url':response.url},
+                          callback=self.parse_nums)
+
+    def parse_detail_by_xpath(self, response):
+        match_re = re.match(".*?(\d+)", response.url)
+
+        if match_re:
             article_item = CnBlogsArticleItem()
             post_id = match_re.group(1)
             title = response.xpath('//*[@id="news_title"]//a/text()').extract_first("")
@@ -143,7 +201,6 @@ class CnblogsSpider(scrapy.Spider):
             yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
                           meta={'article_item': article_item},
                           callback=self.parse_nums)
-
     def parse_detail_by_css(self, response):
         match_re = re.match('.*?(\d+)', response.url)
         if match_re:
@@ -180,14 +237,23 @@ class CnblogsSpider(scrapy.Spider):
 
     def parse_nums(self, response):
         j_data = json.loads(response.text)
-        article_item = response.meta.get('article_item', '')
-        praise_nums = j_data["DiggCount"]
-        fav_nums = j_data["TotalView"]
-        comment_nums = j_data["CommentCount"]
-        article_item['praise_nums'] = praise_nums
-        article_item['fav_nums'] = fav_nums
-        article_item['comment_nums'] = comment_nums
-        article_item['url_object_id'] = common.get_md5(article_item['url'])
+        # item方式
+        # article_item = response.meta.get('article_item', '')
+        # praise_nums = j_data["DiggCount"]
+        # fav_nums = j_data["TotalView"]
+        # comment_nums = j_data["CommentCount"]
+        # article_item['praise_nums'] = praise_nums
+        # article_item['fav_nums'] = fav_nums
+        # article_item['comment_nums'] = comment_nums
+        # article_item['url_object_id'] = common.get_md5(article_item['url'])
+
+        # itemloader方式
+        item_loader = response.meta.get('article_item', '')
+        item_loader.add_value('praise_nums', j_data["DiggCount"])
+        item_loader.add_value('fav_nums', j_data["TotalView"])
+        item_loader.add_value('comment_nums', j_data["CommentCount"])
+        item_loader.add_value('url_object_id', common.get_md5(response.meta.get('url', '')))
+        article_item = item_loader.load_item()
 
         yield article_item  # yield这个数据，此时pipeline会去处理,需要在settings配置pipeline
 

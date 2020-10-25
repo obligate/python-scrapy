@@ -218,6 +218,13 @@ class MysqlPipeline(object):
 3.需要在setting.py中设置
 'ArticleSpider.pipelines.MysqlPipeline': 4,
 ```
+
+## itemloader
+```
+1. 需要导入ItemLoader
+from scrapy.loader import ItemLoader
+
+```
 ## refer
 
 - [python extension packages for window](https://www.lfd.uci.edu/~gohlke/pythonlibs/)
