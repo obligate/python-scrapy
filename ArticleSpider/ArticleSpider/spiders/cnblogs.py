@@ -64,7 +64,6 @@ class CnblogsSpider(scrapy.Spider):
         next_url = response.xpath('//a[contains(text(),"Next >")]/@href').extract_first("")  # 获取a标签中的值包含Next >的并获取href
         if next_url:
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
-        pass
 
     def parse_by_css(self, response):
         # 1.xpath
@@ -102,15 +101,21 @@ class CnblogsSpider(scrapy.Spider):
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_detail(self, response):
-        match_re = re.match('.*?(\d+)', response.url)
+        match_re = re.match(".*?(\d+)", response.url)
         if match_re:
-            title = response.css('#news_title a::text').extract_first("")
-            create_date = response.css('#news_info .time::text').extract_first("")
-            content = response.css('#news_content').extract()[0]  # 内容一般保存html
-            tag_list = response.css(".news_tags a::text").extract()
+            post_id = match_re.group(1)
+            title = response.xpath('//*[@id="news_title"]//a/text()').extract_first("")
+            create_date = response.xpath('//*[@id="news_info"]//*[@class="time"]/text()').extract_first("")
+            # 提取时间
+            match_re = re.match(".*?(\d+.*)", create_date)
+            if match_re:
+                create_date = match_re.group(1)
+
+            content = response.xpath('//*[@id="news_content"]').extract()[0]  # 内容一般保存html
+            tag_list = response.xpath('//*[@class="news_tags"]//a/text()').extract()
             tags = ",".join(tag_list)  # mysql存储的时候，用逗号隔开
 
-            post_id = match_re.group(1)
+
             # 同步请求代码，在并发要求不是很高时可以采用,建议采用异步，yield方式
             # html = requests.get(parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)))
             # j_data = json.loads(html.text)
@@ -119,10 +124,29 @@ class CnblogsSpider(scrapy.Spider):
             # comment_nums = j_data["CommentCount"]
             yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)), callback=self.parse_nums)
 
-        pass
-
     def parse_detail_by_css(self, response):
-        pass
+        match_re = re.match('.*?(\d+)', response.url)
+        if match_re:
+            post_id = match_re.group(1)
+            title = response.css('#news_title a::text').extract_first("")
+            create_date = response.css('#news_info .time::text').extract_first("")
+            # 提取时间
+            match_re = re.match(".*?(\d+.*)", create_date)
+            if match_re:
+                create_date = match_re.group(1)
+
+            content = response.css('#news_content').extract()[0]  # 内容一般保存html
+            tag_list = response.css(".news_tags a::text").extract()
+            tags = ",".join(tag_list)  # mysql存储的时候，用逗号隔开
+
+            # 同步请求代码，在并发要求不是很高时可以采用,建议采用异步，yield方式
+            # html = requests.get(parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)))
+            # j_data = json.loads(html.text)
+            # praise_nums = j_data["DiggCount"]
+            # fav_nums = j_data["TotalView"]
+            # comment_nums = j_data["CommentCount"]
+            yield Request(url=parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id)),
+                          callback=self.parse_nums)
 
     def parse_nums(self, response):
         j_data = json.loads(response.text)
