@@ -10,3 +10,4 @@ line = 'peter123'
 regex_str = '^p.*'    # 字符以p开始，后面可以是任意字符
 if re.match(regex_str, line):  # 只有模式匹配成功，就会返回一个值
     print('yes')
+
