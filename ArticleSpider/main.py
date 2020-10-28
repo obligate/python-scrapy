@@ -17,4 +17,5 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))   # 需要把当前文件所在的根目录添加到环境变量才可以进行debug
 
-execute(['scrapy', 'crawl', 'cnblogs'])
+# execute(['scrapy', 'crawl', 'cnblogs'])
+execute(['scrapy', 'crawl', 'zhihu'])

@@ -223,7 +223,92 @@ class MysqlPipeline(object):
 ```
 1. 需要导入ItemLoader
 from scrapy.loader import ItemLoader
+```
 
+## selenium
+```
+1. 安装selenium
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com selenium
+2. 下载driver,下载跟chrome版本对应的chromedriver驱动
+http://chromedriver.chromium.org/downloads
+3. 重新spider的start_request方法
+
+```
+
+## scrapyd部署项目
+```
+1. 安装
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com  scrapyd
+pip install -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com scrapy-client
+2. 修改默认配置 default_scrapyd.conf，在venv\Lib\site-packages\scrapyd\default_scrapyd.conf
+[scrapyd]
+eggs_dir    = /mnt/scrapy/eggs
+logs_dir    = /mnt/scrapy/logs
+items_dir   = /mnt/scrapy/items
+dbs_dir     = /mnt/scrapy/dbs
+bind_address = 0.0.0.0
+3. 安装完成后，在cmd中启动命令
+scrapyd
+在浏览器中输入：http://localhost:6800/,如果出现下面界面则表示启动成功
+```
+![scrapyd](doc-imgs/41.png)
+```
+3.配置scrapy.cfg的配置文件， 这里是命名为larry，命名可以任意怎么都可以，只要能标识出来项目就可以。
+[settings]
+default = crawler.settings
+
+[deploy:larry]
+url = http://localhost:6800/
+project = ArticleSpider
+version = 1.0.0
+4. 执行scrapyd-deploy，这个命令在windows下是运行不了的,因为在我们安装的根目录C:\Program Files\Python35\Scripts中可以查看这个文件是没有后缀名：
+解决方法：在同目录下，新建文件scrapyd-deploy.bat,
+```
+![scrapyd-deploy](doc-imgs/42.png)
+```
+@echo off
+
+"D:\Software\Python\3.7.3\python.exe" "D:\Software\Python\3.7.3\Scripts\scrapyd-deploy" %1 %2 %3 %4 %5 %6 %7 %8 %9
+```
+```
+上边代码是调用的我的环境中的python.exe路径，大家可以根据自己环境来改变路径做配置。这样就可以执行scrapyd-deploy这个命令了
+然后，进入到我们爬虫的根目录，运行scrapyd-deploy
+```
+![scrapyd-deploy](doc-imgs/43.png)
+```
+显示这个就证明我们成功执行了scrapyd-deploy，注意：一定要进入爬虫根目录，就是带有scrapy.cfg的那一层及目录
+运行：scrapyd-deploy larry -p  ArticleSpider
+```
+![scrapyd-deploy](doc-imgs/44.png)
+```
+这里显示我们部署成功，可以查看执行启动scrapyd服务端的当先目录下有两个文件夹：dbs eggs
+到这一步，只是把爬虫项目上传到服务端，并没有启动
+接下来看看如何启动：
+先运行命令查看服务端状态：curl http://localhost:6800/daemonstatus.json
+```
+![scrapyd-deploy](doc-imgs/45.jpg)
+```
+返回的信息告诉我们：都为0
+再执行启动命令：
+curl http://localhost:6800/schedule.json -d project=ArticleSpider -d spider=cnblogs
+然后查看网页127.0.0.1:6800
+停止一个爬虫
+curl http://localhost:6800/cancel.json -d project=PROJECT_NAME -d job=JOB_ID
+也可以通过
+scrapyd-client schedule -p ArticleSpider cnblogs
+```
+### scrapyweb
+```
+1. 安装
+pip install scrapydweb
+2. 运行
+scrapyweb
+3. 项目根目录，也就是scrapy.cfg目录修改scrapydweb_settings_v10.py
+第一处就是username和password，如果是远程的服务器的话，建议开启认证
+USERNAME = 'peter'
+PASSWORD = 'peter'
+第二处是项目路径
+SCRAPY_PROJECTS_DIR = 'E:/Work/MyCode/python-scrapy/ArticleSpider'
 ```
 ## refer
 
@@ -231,3 +316,5 @@ from scrapy.loader import ItemLoader
 - [英文](https://docs.scrapy.org/en/latest/) https://docs.scrapy.org/en/latest/
 - [中文](https://www.osgeo.cn/scrapy/) https://www.osgeo.cn/scrapy/
 - [xpath函数](https://www.w3school.com.cn/xpath/xpath_functions.asp)
+- [chromedriver](http://chromedriver.chromium.org/downloads)
+- [selenium-python](https://selenium-python.readthedocs.io/)

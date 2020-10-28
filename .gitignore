@@ -1,2 +1,4 @@
 *.pyc
 .idea
+/ArticleSpider/article.json
+/ArticleSpider/articleexport.json
